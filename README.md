@@ -1,1 +1,0 @@
-# Professional-Skills-Group6
