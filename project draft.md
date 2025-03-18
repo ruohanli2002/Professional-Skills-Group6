@@ -1,1 +1,245 @@
 # Professional-Skills-Group6
+---
+title: "bluejays"
+editor: visual
+
+format:
+  html:
+    fig-width: 5
+    fig-height: 4
+    fig-align: center
+    dpi:  300
+    
+---
+
+# Introduction {#sec-intro}
+
+The Blue Jay (Cyanocitta cristata) is a species of corvid widely distributed across North America, particularly in Florida. It plays a significant role in the local ecosystem, not only due to its striking appearance and intelligent behavior but also because of its influence on seed dispersal, forest regeneration, and ecological balance.
+
+**Ecological Importance of Blue Jays**
+
+Seed Dispersal and Forest Regeneration Blue Jays primarily feed on acorns and other nuts. They store these seeds in various locations to consume later; however, many of these seeds are never retrieved, leading to natural germination and contributing to forest expansion and renewal. Studies have shown that Blue Jays are significant seed dispersers in forests, selecting and transporting oak and American Chestnut seeds, thereby facilitating forest regeneration.Indicator Species for Ecosystem Health As a species sensitive to habitat changes, the population and health status of Blue Jays can serve as an indicator of environmental stability. Their presence (or absence) in an area can reflect the overall health of the ecosystem, as they are relatively sensitive to environmental changes. Studying their morphological traits (such as bill length, body mass, and skull length) provides valuable insights into their growth patterns and adaptations to environmental changes.
+
+This study aims to investigate the relationship between bill length (BillLength) and body mass (Mass)in Blue Jays and determine whether additional factors, such as sex and skull length, improve predictive accuracy. Specifically, we address the following research questions:
+
+1: **How well can body mass be predicted using a linear model with just one explanatory variable, namely bill length?**
+
+2: **Would this model be improved by adding the bird’s sex and/or skull length as further explanatory variables,and what evidence is there that, on average, the skull length differs for male and female birds?**
+
+# Exploratory analysis and methods {#sec-eda}
+
+To understand the key characteristics of the dataset, we first summarize the variables and their distributions. This exploratory analysis will help us assess the relationships among **sex (KnownSex), skull length (Skull), bill length (BillLength), and body mass (Mass)**, and provide insights relevant to our research questions.
+
+| **Variable Name** | **Description** |
+|------------------------------------|------------------------------------|
+| **BillLength** | Length of the bill (mm) |
+| **Mass** | Body Mass (grams) |
+| **KnownSex** | F = Female, M = Male |
+| **Skull** | Distance from the base of the bill to the back of the skull (mm) |
+
+These variables will be used to investigatepredictive modeling of body mass **whether skull length and sex improve the prediction of body mass** and **if skull length differs between sexes**.
+
+```{r}
+#| echo: false
+#| warning: false 
+#| message: false
+#| label:  fig-sca
+#| fig-cap: "Bill Length vs Body Mass"
+library(ggplot2)
+library(dplyr)
+data<-read.csv("C:/Users/FOX/Desktop/bluejays/project6-bluejays.csv")
+ggplot(data, aes(x = BillLength, y = Mass, color = KnownSex)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Scatter Plot of Bill Length vs. Body Mass",
+       x = "Bill Length (mm)",
+       y = "Body Mass (g)") +
+  theme_minimal()
+```
+**For the secondary question.** If there is a clear difference in distributions between males and females, Sex might be an important predictor @fig-sex.
+```{r}
+#| echo: false
+#| warning: false 
+#| message: false
+#| fig-cap: " Body mass with the sex different"
+#| label: fig-sex
+library(ggcorrplot)
+library(ggplot2)
+library(corrplot)
+library(cowplot)
+install.packages("cowplot")
+library(grid)
+ggplot(data, aes(x = KnownSex, y = Mass, fill = KnownSex)) +
+  geom_boxplot(alpha = 0.6) +
+  labs(title = "Body Mass Distribution by Sex",
+       x = "Sex",
+       y = "Body Mass (g)") +
+  theme_minimal()
+```
+
+We focused on the correlation between Bill Length, Skull Length, and Body Mass to judge which variables might be important in predicting Body Mass.
+```{r}
+#| echo: false
+cor_matrix <- cor(data[, c("BillLength", "Skull", "Mass")], use = "complete.obs")
+print(cor_matrix)
+
+```
+This boxplot shows the Skull Length distribution of individuals of different genders (F and M). Boxes indicate interquartile ranges, medians are marked with bold lines, whiskers indicate data ranges, and outliers are shown as dots. As can be seen from the figure, the skull length of males (M) is overall longer than that of females (F), and the distribution range is also larger @fig-ssex.
+
+```{r}
+#| echo: false
+#| warning: false 
+#| message: false
+#| fig-cap: "skull length distribution by sex"
+#| label: fig-ssex
+ggplot(data, aes(x = KnownSex, y = Skull, fill = KnownSex)) +
+  geom_boxplot(alpha = 0.6) +
+  labs(title = "Skull Length Distribution by Sex",
+       x = "Sex",
+       y = "Skull Length (mm)") +
+  theme_minimal()
+```
+# Rusults and analysis {#sec-ra}
+$$
+\begin{align}
+y_{i} &= \alpha + \beta_1 \cdot x_{1i} + \beta_2 \cdot x_{2i} + \beta_3 \cdot x_{1i} \cdot x_{2i} + \epsilon_i, ~~~~ \epsilon_i \sim N(0, \sigma^2), ~~~~ i=1,\ldots,150 \nonumber \\
+&= \alpha + \beta_{\mbox{BillLength}} \cdot \mbox{BillLength} + \beta_{\mbox{Sex}} \cdot \mathbb{I}_{\mbox{Sex}}(x) + \beta_{\mbox{BillLength, Sex}} \cdot \mbox{BillLength} \cdot \mathbb{I}_{\mbox{Sex}}(x) + \epsilon_i, \nonumber
+\end{align}
+$$
+
+where
+
+-   $\alpha$ is the intercept of the regression line for the baseline sex (Female).
+-   $\beta_{\mbox{BillLength}}$ is the slope of the regression line for the baseline sex (Female).
+-   $\beta_{\mbox{Sex}}$ is the additional term added to $\alpha$ to get the intercept of the regression line for Male birds.
+-   $\beta_{\mbox{BillLength, Sex}}$ is the additional term added to $\beta_{\mbox{BillLength}}$to get the slope of the regression line for Male birds.
+-   $\mathbb{I}_{\mbox{Sex}}(x)$is an indicator function indicating the chosen sex (Male = 1, Female = 0).
+
+The regression coefficient (β) for the SexBinary variable is -0.717, with a p-value of 0.482. This suggests that, after accounting for BillLength and Skull, the effect of sex on mass is not statistically significant (p\>0.05). Since the SexBinary variable is not statistically significant (p=0.482\>0.05), we should consider removing it from the model. This will simplify the model while maintaining its predictive power. 
+```{r}
+#| echo: false
+#| warning: false 
+#| message: false 
+library(MASS)
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+data$SexBinary <- ifelse(data$KnownSex == "M", 1, 0)
+full_model <- lm(Mass ~ BillLength * Skull * SexBinary, data = data)
+step_model <- stepAIC(full_model, direction = "backward", trace = FALSE)
+Coeffs <- round(coef(step_model), 3)
+AIC_value <- step_model$aic
+regression_results <- data.frame(
+  term = names(Coeffs),
+  estimate = Coeffs
+)
+sex_beta = regression_results[regression_results["term"] == "SexBinary"]
+kable(regression_results, caption = "Table: Stepwise Regression Model Coefficients") %>%
+  kable_styling(full_width = FALSE, position = "center")
+```
+
+
+$$
+\text{Mass} = \beta_0 + \beta_1 \cdot\text{BillLength} + \beta_2 \cdot \text{Skull} + \epsilon_i
+$$
+
+Residuals appear randomly scattered around zero with no clear pattern.Suggests that the assumption of linearity is reasonable, but there is some variation in spread @fig-risfit.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-cap: "Residuals vs. Fitted Values"
+#| label: fig-risfit
+
+
+library(ggplot2)
+
+
+updated_model <- lm(Mass ~ BillLength + Skull, data = data)
+
+residuals <- residuals(updated_model)
+fitted_values <- fitted(updated_model)
+
+ggplot(data = data.frame(fitted_values, residuals), aes(x = fitted_values, y = residuals)) +
+  geom_point(color = "blue") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals vs. Fitted Values", x = "Fitted Values", y = "Residuals") +
+  theme_minimal()
+```
+
+Most points lie along the diagonal reference line, but slight deviations occur at the extremes.The residuals are approximately normally distributed, but there may be slight skewness or outliers @fig-qq.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-cap: "Normal Q-Q Plot"
+#| label: fig-qq
+ggplot(data = data.frame(sample = residuals), aes(sample = sample)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  labs(title = "Normal Q-Q Plot") +
+  theme_minimal()
+```
+
+The histogram is roughly bell-shaped but shows some deviations.While residuals are close to normal, there may be some minor skewness @fig-hist.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-cap: "Histogram of Residuals"
+#| label: fig-hist
+ggplot(data = data.frame(residuals), aes(x = residuals)) +
+  geom_histogram(aes(y = ..density..), bins = 15, fill = "blue", alpha = 0.5, color = "black") +
+  geom_density(color = "red", linewidth = 1) +
+  labs(title = "Histogram of Residuals", x = "Residuals", y = "Density") +
+  theme_minimal()
+```
+
+
+The red trend line is slightly curved, and spread is somewhat uneven.There is some variation in residual spread, which suggests potential heteroscedasticity @fig-scale.
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-cap: "Scale-Location Plot"
+#| label: fig-scale
+ggplot(data = data.frame(fitted_values, abs_residuals = sqrt(abs(residuals))), aes(x = fitted_values, y = abs_residuals)) +
+  geom_point(color = "blue") +
+  geom_smooth(method = "loess", color = "red") +
+  labs(title = "Scale-Location Plot", x = "Fitted Values", y = "√|Residuals|") +
+  theme_minimal()
+```
+
+**Null Hypothesis ($H_0$)**:  
+
+$$
+\quad\mu_{\text{male}} = \mu_{\text{female}}
+$$
+**Alternative Hypothesis ($H_1$)**:  
+
+$$
+\quad \mu_{\text{male}} \neq \mu_{\text{female}}
+$$
+We conducted two statistical tests to examine whether skull length differs between male and female birds. The independent t-test yielded a t-statistic of 3.23 with a p-value of 0.00198. Since the p-value is significantly lower than 0.05, we reject the null hypothesis and conclude that there is a statistically significant difference in skull length between male and female birds. This suggests that, on average, male birds have a different skull length compared to female birds.
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+data$SexBinary <- ifelse(data$KnownSex == "M", 1, 0)
+data$Skull <- as.numeric(as.character(data$Skull))
+data <- na.omit(data)
+male_skull <- data$Skull[data$SexBinary == 1]
+female_skull <- data$Skull[data$SexBinary == 0]
+t_test_result <- t.test(male_skull, female_skull, var.equal = FALSE)
+t_stat_p_value <- c(t_test_result$statistic, t_test_result$p.value)
+names(t_stat_p_value) <- c("t-statistic", "p-value")
+print(t_stat_p_value)
+```
+
+# Discussion and conclusions {#sec-con}
+Including skull length as an explanatory variable significantly improved the prediction of body mass, whereas sex did not provide additional explanatory power in the model. A t-test confirmed a statistically significant difference in skull length between males and females (p<0.05), supporting the conclusion that male Blue Jays generally have longer skulls than females. The boxplot visualization in the exploratory data analysis further illustrated greater variability and a higher median skull length for males compared to females. Overall, our findings suggest that while bill length alone provides a reasonable estimate of body mass, incorporating skull length enhances the model’s accuracy. Additionally, the observed differences in skull length between sexes confirm sexual dimorphism in Blue Jays. Future studies could investigate other morphological or ecological factors to further refine predictive modeling.
